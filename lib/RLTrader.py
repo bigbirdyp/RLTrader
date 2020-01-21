@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import quantstats as qs
 
+import time
 from os import path
 from typing import Dict
 
@@ -41,17 +42,21 @@ class RLTrader:
                  reward_strategy: BaseRewardStrategy = IncrementalProfit,
                  exchange_args: Dict = {},
                  **kwargs):
-        self.logger = kwargs.get('logger', init_logger(__name__, show_debug=kwargs.get('show_debug', True)))
+        self.logger = kwargs.get('logger', init_logger(
+            __name__, show_debug=kwargs.get('show_debug', True)))
 
         self.Model = model
         self.Policy = policy
         self.Reward_Strategy = reward_strategy
         self.exchange_args = exchange_args
         self.tensorboard_path = kwargs.get('tensorboard_path', None)
-        self.input_data_path = kwargs.get('input_data_path', 'data/input/coinbase-1h-btc-usd.csv')
-        self.params_db_path = kwargs.get('params_db_path', 'sqlite:///data/params.db')
+        self.input_data_path = kwargs.get(
+            'input_data_path', 'data/input/coinbase-1h-btc-usd.csv')
+        self.params_db_path = kwargs.get(
+            'params_db_path', 'sqlite:///data/params.db')
 
-        self.date_format = kwargs.get('date_format', ProviderDateFormat.DATETIME_HOUR_24)
+        self.date_format = kwargs.get(
+            'date_format', ProviderDateFormat.DATETIME_HOUR_24)
 
         self.model_verbose = kwargs.get('model_verbose', 1)
         self.n_envs = kwargs.get('n_envs', os.cpu_count())
@@ -68,10 +73,11 @@ class RLTrader:
         if self.data_provider == 'static':
             if not os.path.isfile(self.input_data_path):
                 class_dir = os.path.dirname(__file__)
-                self.input_data_path = os.path.realpath(os.path.join(class_dir, "../{}".format(self.input_data_path)))
+                self.input_data_path = os.path.realpath(os.path.join(
+                    class_dir, "../{}".format(self.input_data_path)))
 
             data_columns = {'Date': 'Date', 'Open': 'Open', 'High': 'High',
-                            'Low': 'Low', 'Close': 'Close', 'Volume': 'VolumeFrom'}
+                            'Low': 'Low', 'Close': 'Close', 'Volume': 'Volume'}
 
             self.data_provider = StaticDataProvider(date_format=self.date_format,
                                                     csv_data_path=self.input_data_path,
@@ -79,7 +85,8 @@ class RLTrader:
         elif self.data_provider == 'exchange':
             self.data_provider = ExchangeDataProvider(**self.exchange_args)
 
-        self.logger.debug(f'Initialized Features: {self.data_provider.columns}')
+        self.logger.debug(
+            f'Initialized Features: {self.data_provider.columns}')
 
     def initialize_optuna(self):
         try:
@@ -129,8 +136,10 @@ class RLTrader:
         }
 
     def optimize_params(self, trial, n_prune_evals_per_trial: int = 2, n_tests_per_eval: int = 1):
-        train_provider, test_provider = self.data_provider.split_data_train_test(self.train_split_percentage)
-        train_provider, validation_provider = train_provider.split_data_train_test(self.train_split_percentage)
+        train_provider, test_provider = self.data_provider.split_data_train_test(
+            self.train_split_percentage)
+        train_provider, validation_provider = train_provider.split_data_train_test(
+            self.train_split_percentage)
 
         del test_provider
 
@@ -146,7 +155,8 @@ class RLTrader:
                            **model_params)
 
         last_reward = -np.finfo(np.float16).max
-        n_steps_per_eval = int(len(train_provider.data_frame) / n_prune_evals_per_trial)
+        n_steps_per_eval = int(
+            len(train_provider.data_frame) / n_prune_evals_per_trial)
 
         for eval_idx in range(n_prune_evals_per_trial):
             try:
@@ -160,7 +170,8 @@ class RLTrader:
             trades = train_env.get_attr('trades')
 
             if len(trades[0]) < 1:
-                self.logger.info(f'Pruning trial for not making any trades: {eval_idx}')
+                self.logger.info(
+                    f'Pruning trial for not making any trades: {eval_idx}')
                 raise optuna.structs.TrialPruned()
 
             state = None
@@ -187,7 +198,8 @@ class RLTrader:
 
     def optimize(self, n_trials: int = 20):
         try:
-            self.optuna_study.optimize(self.optimize_params, n_trials=n_trials, n_jobs=1)
+            self.optuna_study.optimize(
+                self.optimize_params, n_trials=n_trials, n_jobs=1)
         except KeyboardInterrupt:
             pass
 
@@ -208,11 +220,13 @@ class RLTrader:
               render_test_env: bool = False,
               render_report: bool = True,
               save_report: bool = False):
-        train_provider, test_provider = self.data_provider.split_data_train_test(self.train_split_percentage)
+        train_provider, test_provider = self.data_provider.split_data_train_test(
+            self.train_split_percentage)
 
         del test_provider
 
-        train_env = SubprocVecEnv([make_env(train_provider, i) for i in range(self.n_envs)])
+        train_env = SubprocVecEnv([make_env(train_provider, i)
+                                   for i in range(self.n_envs)])
 
         model_params = self.get_model_params()
 
@@ -228,12 +242,14 @@ class RLTrader:
         steps_per_epoch = len(train_provider.data_frame)
 
         for model_epoch in range(0, n_epochs):
-            self.logger.info(f'[{model_epoch}] Training for: {steps_per_epoch} time steps')
+            self.logger.info(
+                f'[{model_epoch}] Training for: {steps_per_epoch} time steps')
 
             model.learn(total_timesteps=steps_per_epoch)
 
             if model_epoch % save_every == 0:
-                model_path = path.join('data', 'agents', f'{self.study_name}__{model_epoch}.pkl')
+                model_path = path.join(
+                    'data', 'agents', f'{self.study_name}__{model_epoch}.pkl')
                 model.save(model_path)
 
                 if test_trained_model:
@@ -245,20 +261,34 @@ class RLTrader:
         self.logger.info(f'Trained {n_epochs} models')
 
     def test(self, model_epoch: int = 0, render_env: bool = True, render_report: bool = True, save_report: bool = False):
-        train_provider, test_provider = self.data_provider.split_data_train_test(self.train_split_percentage)
+        train_provider, test_provider = self.data_provider.split_data_train_test(
+            self.train_split_percentage)
 
         del train_provider
 
-        init_envs = DummyVecEnv([make_env(test_provider) for _ in range(self.n_envs)])
+        history_data = test_provider.historical_ohlcv()
+        history_data["Day"] = history_data["Date"].apply(lambda x: time.strftime("%Y-%m-%d",time.localtime(x)))
+        history_data["Day"] = pd.to_datetime(history_data["Day"])
+        history_data.sort_values(['Day','Date'],ascending=[1,0],inplace=True)
+        grouped = history_data.groupby(['Day']).head(1)
+        benchmark = grouped[["Day","Close"]]
+        benchmark.set_index('Day', drop=True, inplace=True)
+        benchmark = benchmark.pct_change()[1:]
+        self.logger.info(f"benchmark is:\n {benchmark}")
 
-        model_path = path.join('data', 'agents', f'{self.study_name}__{model_epoch}.pkl')
+        init_envs = DummyVecEnv([make_env(test_provider)
+                                 for _ in range(self.n_envs)])
+
+        model_path = path.join(
+            'data', 'agents', f'{self.study_name}__{model_epoch}.pkl')
         model = self.Model.load(model_path, env=init_envs)
 
         test_env = DummyVecEnv([make_env(test_provider) for _ in range(1)])
 
         self.logger.info(f'Testing model ({self.study_name}__{model_epoch})')
 
-        zero_completed_obs = np.zeros((self.n_envs,) + init_envs.observation_space.shape)
+        zero_completed_obs = np.zeros(
+            (self.n_envs,) + init_envs.observation_space.shape)
         zero_completed_obs[0, :] = test_env.reset()
 
         state = None
@@ -283,13 +313,16 @@ class RLTrader:
 
                 net_worths.set_index('Date', drop=True, inplace=True)
                 returns = net_worths.pct_change()[1:]
+                self.logger.info(f"returns.Balance is:\n {returns.Balance}")
 
                 if render_report:
-                    qs.plots.snapshot(returns.Balance, title='RL Trader Performance')
+                    qs.plots.snapshot(
+                        returns.Balance, title='RL Trader Performance')
 
                 if save_report:
-                    reports_path = path.join('data', 'reports', f'{self.study_name}__{model_epoch}.html')
-                    qs.reports.html(returns.Balance, file=reports_path)
+                    reports_path = path.join(
+                        'data', 'reports', f'{self.study_name}__{model_epoch}.html')
+                    qs.reports.html(returns.Balance,benchmark=benchmark.Close, output=reports_path)
 
         self.logger.info(
             f'Finished testing model ({self.study_name}__{model_epoch}): ${"{:.2f}".format(np.sum(rewards))}')

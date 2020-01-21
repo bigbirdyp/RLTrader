@@ -38,22 +38,23 @@ if __name__ == '__main__':
 
         for proc in processes:
             proc.join()
-
-    from lib.RLTrader import RLTrader
-
-    trader = RLTrader(**vars(args), logger=logger, reward_strategy=reward_strategy)
-
-    if args.command == 'train':
-        trader.train(n_epochs=args.epochs,
-                     save_every=args.save_every,
-                     test_trained_model=args.test_trained,
-                     render_test_env=args.render_test,
-                     render_report=args.render_report,
-                     save_report=args.save_report)
-    elif args.command == 'test':
-        trader.test(model_epoch=args.model_epoch,
-                    render_env=args.render_env,
-                    render_report=args.render_report,
-                    save_report=args.save_report)
     elif args.command == 'update-static-data':
         download_data_async()
+    else:
+        from lib.RLTrader import RLTrader
+
+        trader = RLTrader(**vars(args), logger=logger, reward_strategy=reward_strategy)
+
+        if args.command == 'train':
+            trader.train(n_epochs=args.epochs,
+                        save_every=args.save_every,
+                        test_trained_model=args.test_trained,
+                        render_test_env=args.render_test,
+                        render_report=args.render_report,
+                        save_report=args.save_report)
+        elif args.command == 'test':
+            trader.test(model_epoch=args.model_epoch,
+                        render_env=args.render_env,
+                        render_report=args.render_report,
+                        save_report=args.save_report)
+

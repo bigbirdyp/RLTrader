@@ -2,6 +2,8 @@ import asyncio
 import ssl
 import pandas as pd
 import os
+import requests
+from io import StringIO
 
 final_date_format = '%Y-%m-%d %H:%M'
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -11,9 +13,19 @@ daily_url = "https://www.cryptodatadownload.com/cdd/Coinbase_BTCUSD_d.csv"
 
 
 async def save_url_to_csv(url: str, date_format: str, file_name: str):
-    csv = pd.read_csv(url, header=1)
+    # csv = pd.read_csv(url, encoding="iso-8859-1")  # header=1,
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:66.0) Gecko/20100101 Firefox/66.0"}
+    req = requests.get(url, headers=headers, verify=False)
+    lines = req.text.splitlines()[1:]
+    data = StringIO("\n".join(lines))
+    csv = pd.read_csv(data)
+
     csv = csv.dropna(thresh=2)
-    csv.columns = ['Date', 'Symbol', 'Open', 'High', 'Low', 'Close', 'VolumeFrom', 'VolumeTo']
+    print(url)
+    print(csv.columns)
+    csv.columns = ['Date', 'Symbol', 'Open', 'High',
+                   'Low', 'Close', 'Volume BTC', 'Volume USD']
     csv['Date'] = pd.to_datetime(csv['Date'], format=date_format)
     csv['Date'] = csv['Date'].dt.strftime(final_date_format)
 
@@ -29,7 +41,8 @@ async def save_as_csv(hourly_url: str, daily_url: str):
     # also FIRST_EXCEPTION and ALL_COMPLETED (default)
     done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
     print('>> done: ', done)
-    print('>> pending: ', pending)  # will be empty if using default return_when setting
+    # will be empty if using default return_when setting
+    print('>> pending: ', pending)
 
 
 def download_data_async():

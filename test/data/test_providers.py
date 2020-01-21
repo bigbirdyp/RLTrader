@@ -7,7 +7,7 @@ from lib.data.providers import StaticDataProvider
 @pytest.fixture
 def csv_provider():
     data_columns = {'Date': 'Date', 'Open': 'Open', 'High': 'High',
-                    'Low': 'Low', 'Close': 'Close', 'Volume': 'VolumeFrom'}
+                    'Low': 'Low', 'Close': 'Close', 'Volume': 'Volume'}
     provider = StaticDataProvider(
         date_format=ProviderDateFormat.DATETIME_HOUR_24, csv_data_path="data/input/coinbase-1h-btc-usd.csv", data_columns=data_columns
     )
