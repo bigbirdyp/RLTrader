@@ -95,7 +95,9 @@ class RLTrader:
             strategy = self.Reward_Strategy()
 
             self.study_name = f'{model.__class__.__name__}__{model.act_model.__class__.__name__}__{strategy.__class__.__name__}'
-        except:
+        except Exception as e:
+            self.logger.debug('catch exception: %s\n' % e)
+
             self.study_name = f'UnknownModel__UnknownPolicy__UnknownStrategy'
 
         self.optuna_study = optuna.create_study(
@@ -267,11 +269,13 @@ class RLTrader:
         del train_provider
 
         history_data = test_provider.historical_ohlcv()
-        history_data["Day"] = history_data["Date"].apply(lambda x: time.strftime("%Y-%m-%d",time.localtime(x)))
+        history_data["Day"] = history_data["Date"].apply(
+            lambda x: time.strftime("%Y-%m-%d", time.localtime(x)))
         history_data["Day"] = pd.to_datetime(history_data["Day"])
-        history_data.sort_values(['Day','Date'],ascending=[1,0],inplace=True)
+        history_data.sort_values(
+            ['Day', 'Date'], ascending=[1, 0], inplace=True)
         grouped = history_data.groupby(['Day']).head(1)
-        benchmark = grouped[["Day","Close"]]
+        benchmark = grouped[["Day", "Close"]]
         benchmark.set_index('Day', drop=True, inplace=True)
         benchmark = benchmark.pct_change()[1:]
         self.logger.info(f"benchmark is:\n {benchmark}")
@@ -322,7 +326,11 @@ class RLTrader:
                 if save_report:
                     reports_path = path.join(
                         'data', 'reports', f'{self.study_name}__{model_epoch}.html')
-                    qs.reports.html(returns.Balance,benchmark=benchmark.Close, output=reports_path)
+                    try:
+                        qs.reports.html(
+                            returns.Balance, benchmark=benchmark.Close, output=reports_path)
+                    except Exception as e:
+                        self.logger.debug('catch exception: %s\n' % e)
 
         self.logger.info(
             f'Finished testing model ({self.study_name}__{model_epoch}): ${"{:.2f}".format(np.sum(rewards))}')

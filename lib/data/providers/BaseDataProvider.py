@@ -17,7 +17,8 @@ class BaseDataProvider(object, metaclass=ABCMeta):
     def __init__(self, date_format: ProviderDateFormat, **kwargs):
         self.date_format = date_format
 
-        self.custom_datetime_format: str = kwargs.get('custom_datetime_format', None)
+        self.custom_datetime_format: str = kwargs.get(
+            'custom_datetime_format', None)
 
         data_columns: Dict[str, str] = kwargs.get('data_columns', None)
 
@@ -81,17 +82,22 @@ class BaseDataProvider(object, metaclass=ABCMeta):
         if self.date_format is ProviderDateFormat.TIMESTAMP_UTC:
             formatted[date_col] = date_frame.apply(
                 lambda x: datetime.utcfromtimestamp(x).strftime('%Y-%m-%d %H:%M'))
-            formatted[date_col] = pd.to_datetime(date_frame, format='%Y-%m-%d %H:%M')
+            formatted[date_col] = pd.to_datetime(
+                date_frame, format='%Y-%m-%d %H:%M')
         elif self.date_format is ProviderDateFormat.TIMESTAMP_MS:
             formatted[date_col] = pd.to_datetime(date_frame, unit='ms')
         elif self.date_format is ProviderDateFormat.DATETIME_HOUR_12:
-            formatted[date_col] = pd.to_datetime(date_frame, format='%Y-%m-%d %I-%p')
+            formatted[date_col] = pd.to_datetime(
+                date_frame, format='%Y-%m-%d %I-%p')
         elif self.date_format is ProviderDateFormat.DATETIME_HOUR_24:
-            formatted[date_col] = pd.to_datetime(date_frame, format='%Y-%m-%d %H')
+            formatted[date_col] = pd.to_datetime(
+                date_frame, format='%Y-%m-%d %H')
         elif self.date_format is ProviderDateFormat.DATETIME_MINUTE_12:
-            formatted[date_col] = pd.to_datetime(date_frame, format='%Y-%m-%d %I:%M-%p')
+            formatted[date_col] = pd.to_datetime(
+                date_frame, format='%Y-%m-%d %I:%M-%p')
         elif self.date_format is ProviderDateFormat.DATETIME_MINUTE_24:
-            formatted[date_col] = pd.to_datetime(date_frame, format='%Y-%m-%d %H:%M')
+            formatted[date_col] = pd.to_datetime(
+                date_frame, format='%Y-%m-%d %H:%M')
         elif self.date_format is ProviderDateFormat.DATE:
             formatted[date_col] = pd.to_datetime(date_frame, format='%Y-%m-%d')
         elif self.date_format is ProviderDateFormat.CUSTOM_DATIME:
@@ -100,6 +106,7 @@ class BaseDataProvider(object, metaclass=ABCMeta):
         else:
             raise NotImplementedError
 
-        formatted[date_col] = formatted[date_col].values.astype(np.int64) // 10 ** 9
+        formatted[date_col] = formatted[date_col].values.astype(
+            np.int64) // 10 ** 9
 
         return formatted

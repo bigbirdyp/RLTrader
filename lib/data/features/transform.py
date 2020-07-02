@@ -16,7 +16,8 @@ def transform(iterable: Iterable, inplace: bool = True, columns: List[str] = Non
         is_list = False
     else:
         is_list = True
-        transformed_iterable = pd.DataFrame(transformed_iterable, columns=columns)
+        transformed_iterable = pd.DataFrame(
+            transformed_iterable, columns=columns)
 
     transformed_iterable.fillna(0, inplace=True)
 
@@ -27,7 +28,8 @@ def transform(iterable: Iterable, inplace: bool = True, columns: List[str] = Non
         columns = transformed_iterable.columns
 
     for column in columns:
-        transformed_iterable[column] = transform_fn(transformed_iterable[column])
+        transformed_iterable[column] = transform_fn(
+            transformed_iterable[column])
 
     transformed_iterable.fillna(method="bfill", inplace=True)
     transformed_iterable[np.bitwise_not(np.isfinite(transformed_iterable))] = 0
@@ -51,4 +53,8 @@ def difference(iterable: Iterable, inplace: bool = True, columns: List[str] = No
 
 
 def log_and_difference(iterable: Iterable, inplace: bool = True, columns: List[str] = None):
-    return transform(iterable, inplace, columns, lambda t_iterable: np.log(t_iterable) - np.log(t_iterable).shift(1))
+    return transform(iterable, inplace, columns, lambda t_iterable: np.log(t_iterable) - np.log(t_iterable.shift(1)))
+
+
+def log_values(iterable: Iterable, inplace: bool = True, columns: List[str] = None):
+    return transform(iterable, inplace, columns, lambda t_iterable: np.log(t_iterable))

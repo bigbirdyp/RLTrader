@@ -9,3 +9,9 @@ data/log/*
 data/reports/*
 *.pkl
 venv/*
+data/hs300.db
+nohup.out
+run.sh
+data/hs300.db.bak
+data/params.db.bak
+data/input/hs300-1d.csv
